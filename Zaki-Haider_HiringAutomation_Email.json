@@ -1,0 +1,1150 @@
+{
+  "name": "Email & Calender Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "14195e41-899f-4426-92bf-da97ef26155e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM",
+          "mode": "list",
+          "cachedResultName": "Master_Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email Status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "00d27167-8d15-457e-ba93-23c3a9e32cb4",
+      "name": "Get pending candidates",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UY9gTuypQIlyNz0e",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f4cd67c-6ce2-474d-bc9b-4722b73e20b5",
+              "leftValue": "={{ $items().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "6ad39a3d-59c1-4cc3-93a0-10561ead81fe",
+      "name": "Has Pending?"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        720,
+        -16
+      ],
+      "id": "a305e7ad-1367-4d09-a8f6-7623fe44f4fb",
+      "name": "Process Each Candidate"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['AI Classification'] }}",
+                    "rightValue": "strong",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2a1ccc34-db50-4350-9586-4cb9ed853017"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0920f100-68b1-49c9-8e9e-635972197444",
+                    "leftValue": "={{ $json['AI Classification'] }}",
+                    "rightValue": "average",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e4987727-0a10-47c7-ac5c-cfedd3b5cd66",
+                    "leftValue": "={{ $json['AI Classification'] }}",
+                    "rightValue": "weak",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        -16
+      ],
+      "id": "6eacd4d5-f2e6-4276-b615-fa09c33dbf6e",
+      "name": "Route by Classification"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Email Address'] }}",
+        "subject": "=Interview Invitation — {{ $json['Role'] }} Position at Trilles AI ",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;\">   <div style=\"background: #1E3A5F; padding: 30px; text-align: center;\">     <h1 style=\"color: white; margin: 0; font-size: 24px;\">Interview Invitation</h1>     <p style=\"color: #A8D8EA; margin: 10px 0 0 0;\">Trilles AI — Hiring Team</p>   </div>   <div style=\"padding: 30px; background: #ffffff;\">     <p style=\"font-size: 16px; color: #333;\">Dear <strong>{{ $json['Full Name'] }}</strong>,</p>     <p style=\"color: #555; line-height: 1.6;\">       Thank you for applying for the <strong>{{ $json['Role'] }}</strong> position at Trilles AI.        After carefully reviewing your application, we are impressed with your background and would        love to invite you for an interview.     </p>     <div style=\"background: #D6EAF8; border-left: 4px solid #2E86C1; padding: 15px; margin: 20px 0; border-radius: 4px;\">       <p style=\"margin: 0; color: #1E3A5F; font-weight: bold;\">Next Steps:</p>       <p style=\"margin: 8px 0 0 0; color: #333;\">You will receive a Google Calendar invite shortly with the interview details. Please accept to confirm your availability.</p>     </div>     <p style=\"color: #555; line-height: 1.6;\">       We look forward to speaking with you and learning more about your experience.        If you have any questions, please don't hesitate to reach out.     </p>     <p style=\"color: #333; margin-top: 30px;\">       Warm regards,<br>       <strong>Trilles AI Hiring Team</strong>     </p>   </div>   <div style=\"background: #F2F3F4; padding: 15px; text-align: center;\">     <p style=\"color: #888; font-size: 12px; margin: 0;\">Trilles AI | www.trillesai.com</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        -224
+      ],
+      "id": "a6fb6067-6c94-4c6c-80ef-58d066eb7500",
+      "name": "Send Interview Email",
+      "webhookId": "63ac7c7d-69b0-459c-9848-963f36eb65d1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zdFOrllbKDhVuMX8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "zakihaider7860@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ DateTime.now().plus({days: 3}).set({hour: 10, minute: 0}).toISO() }}",
+        "end": "={{ DateTime.now().plus({days: 3}).set({hour: 11, minute: 0}).toISO() }}",
+        "additionalFields": {
+          "attendees": [
+            "={{$('Route by Classification').item.json['Email Address']}}"
+          ],
+          "description": "=Interview with candidate for the {{ $('Route by Classification').item.json.Role }} position."
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        -224
+      ],
+      "id": "da08dced-eb98-4686-b75b-33c4bbf8b410",
+      "name": "Create an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "EVCZcikgsWrlA134",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "zakihayder735@gmail.com",
+        "subject": "=Manual Review Required — {{ $json['Full Name'] }} ({{ $json['Role'] }})",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;\">   <div style=\"background: #D35400; padding: 20px; text-align: center;\">     <h2 style=\"color: white; margin: 0;\">Manual Review Required</h2>   </div>   <div style=\"padding: 25px;\">     <p>Hi Hiring Manager,</p>     <p>A candidate requires your manual review. Here are the AI screening results:</p>     <table style=\"width: 100%; border-collapse: collapse; margin: 15px 0;\">       <tr style=\"background: #f5f5f5;\">         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">Name</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['Full Name'] }}</td>       </tr>       <tr>         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">Role</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['Role'] }}</td>       </tr>       <tr style=\"background: #f5f5f5;\">         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">AI Score</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['AI Score'] }}/100</td>       </tr>       <tr>         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">Summary</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['AI Summary'] }}</td>       </tr>       <tr style=\"background: #f5f5f5;\">         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">Strengths</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['AI Strengths'] }}</td>       </tr>       <tr>         <td style=\"padding: 8px; border: 1px solid #ddd; font-weight: bold;\">Concerns</td>         <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $json['AI Concerns'] }}</td>       </tr>     </table>     <p>Please review this candidate and make a decision.</p>     <p>— Automated Hiring System</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "00025013-a975-403e-8696-949cd41dc928",
+      "name": "Notify Hiring Manager",
+      "webhookId": "074172b2-873e-478c-820e-020b2acafba1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zdFOrllbKDhVuMX8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Email Address'] }}",
+        "subject": "=Your Application to Trilles AI — {{ $json['Role'] }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;\">\n  <div style=\"background: #1E3A5F; padding: 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 22px;\">Thank You for Applying</h1>\n    <p style=\"color: #A8D8EA; margin: 8px 0 0 0;\">Trilles AI</p>\n  </div>\n  <div style=\"padding: 30px; background: #ffffff;\">\n    <p style=\"font-size: 16px; color: #333;\">Dear <strong>{{ $json['Full Name'] }}</strong>,</p>\n    <p style=\"color: #555; line-height: 1.6;\">\n      Thank you for taking the time to apply for the <strong>{{ $json['Role'] }}</strong> position \n      at Trilles AI. We genuinely appreciate your interest in joining our team.\n    </p>\n    <p style=\"color: #555; line-height: 1.6;\">\n      After carefully reviewing your application, we have decided to move forward with other \n      candidates whose experience more closely aligns with our current requirements. \n      This was a difficult decision given the quality of applications we received.\n    </p>\n    <p style=\"color: #555; line-height: 1.6;\">\n      We sincerely encourage you to apply again in the future as we grow and new opportunities \n      arise. We wish you every success in your career journey.\n    </p>\n    <p style=\"color: #333; margin-top: 30px;\">\n      With best wishes,<br>\n      <strong>Trilles AI Hiring Team</strong>\n    </p>\n  </div>\n  <div style=\"background: #F2F3F4; padding: 15px; text-align: center;\">\n    <p style=\"color: #888; font-size: 12px; margin: 0;\">Trilles AI | www.trillesai.com</p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        224
+      ],
+      "id": "84e411cc-9ef3-4a43-af56-0edb8472ab2a",
+      "name": "Send Rejection Email",
+      "webhookId": "85bbef58-4111-411a-bb80-44f7bf7b3b06",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zdFOrllbKDhVuMX8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM",
+          "mode": "list",
+          "cachedResultName": "Master_Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email Address": "=",
+            "Email Status": "sent",
+            "Candidate ID": "={{ $('Route by Classification').item.json['Candidate ID'] }}"
+          },
+          "matchingColumns": [
+            "Candidate ID"
+          ],
+          "schema": [
+            {
+              "id": "Candidate ID",
+              "displayName": "Candidate ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Role",
+              "displayName": "Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rename URL",
+              "displayName": "Rename URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume Text",
+              "displayName": "Resume Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Classification",
+              "displayName": "AI Classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Strengths",
+              "displayName": "AI Strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Concerns",
+              "displayName": "AI Concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interview Recommended",
+              "displayName": "Interview Recommended",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Status",
+              "displayName": "Email Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Calender Event Created",
+              "displayName": "Calender Event Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "labelIds",
+              "displayName": "labelIds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1632,
+        224
+      ],
+      "id": "55f60c38-2d2f-4cbd-8d41-7675064028ac",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UY9gTuypQIlyNz0e",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM",
+          "mode": "list",
+          "cachedResultName": "Master_Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Candidate ID": "={{ $('Route by Classification').item.json['Candidate ID'] }}",
+            "Email Status": "sent"
+          },
+          "matchingColumns": [
+            "Candidate ID"
+          ],
+          "schema": [
+            {
+              "id": "Candidate ID",
+              "displayName": "Candidate ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Role",
+              "displayName": "Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rename URL",
+              "displayName": "Rename URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Resume Text",
+              "displayName": "Resume Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Classification",
+              "displayName": "AI Classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Strengths",
+              "displayName": "AI Strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Concerns",
+              "displayName": "AI Concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Interview Recommended",
+              "displayName": "Interview Recommended",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email Status",
+              "displayName": "Email Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Calender Event Created",
+              "displayName": "Calender Event Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "labelIds",
+              "displayName": "labelIds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1632,
+        0
+      ],
+      "id": "1135c708-f135-412b-9016-0eaafc60d839",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UY9gTuypQIlyNz0e",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM",
+          "mode": "list",
+          "cachedResultName": "Master_Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M2Gvt7r8Ze1xGwPekgn-kkBBbSvYzxIGyECGelnPFBM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate ID": "={{ $('Route by Classification').item.json['Candidate ID'] }}",
+            "Email Status": "sent",
+            "Calender Event Created": "true"
+          },
+          "matchingColumns": [
+            "Candidate ID"
+          ],
+          "schema": [
+            {
+              "id": "Candidate ID",
+              "displayName": "Candidate ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Role",
+              "displayName": "Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rename URL",
+              "displayName": "Rename URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume Text",
+              "displayName": "Resume Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Classification",
+              "displayName": "AI Classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Strengths",
+              "displayName": "AI Strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Concerns",
+              "displayName": "AI Concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interview Recommended",
+              "displayName": "Interview Recommended",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Status",
+              "displayName": "Email Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Calender Event Created",
+              "displayName": "Calender Event Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "labelIds",
+              "displayName": "labelIds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1632,
+        -224
+      ],
+      "id": "1571db00-9060-480c-b7db-9d00ffabab48",
+      "name": "Update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UY9gTuypQIlyNz0e",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get pending candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pending candidates": {
+      "main": [
+        [
+          {
+            "node": "Has Pending?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Pending?": {
+      "main": [
+        [
+          {
+            "node": "Process Each Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Each Candidate": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Route by Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Classification": {
+      "main": [
+        [
+          {
+            "node": "Send Interview Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Hiring Manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Interview Email": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Rejection Email": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Process Each Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Hiring Manager": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Process Each Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Process Each Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "07401d40-fa88-4066-9c9d-6117025a1483",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a910b7e31ae6081abf0aed39baee4e8ddaf2c486776c6d27bec18e0e4918c5e6"
+  },
+  "id": "Axrv26uRicwoAosV",
+  "tags": []
+}
